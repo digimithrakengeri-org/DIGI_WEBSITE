@@ -39,5 +39,5 @@ index.html        page markup
 css/style.css     theme + layout (black / lime-green brand palette)
 js/scene.js       Three.js 3D hero scene
 js/ui.js          nav, reveal animations, tilt, pipeline console, optimize demo, contact form
-assets/           brand image + DM favicon
+assets/           original brand image, logo cut-outs (mark, wordmark, full) and icons
 ```
