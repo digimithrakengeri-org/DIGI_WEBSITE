@@ -26,11 +26,10 @@ python3 -m http.server 8000
 
 ## Deploy
 
-**GitHub Pages** (set up): `.github/workflows/pages.yml` publishes the site on every push to
-`main` (and the `claude/digimithra-3d-automation-site-mukxkg` working branch). One-time setup: repo **Settings → Pages → Source → GitHub Actions**.
-The live URL appears in the workflow run and on the Pages settings page.
+Live at **https://digimithra.vercel.app**, hosted on Vercel (project `digimithra`), which builds from this
+GitHub repo's `main` branch. There's no build step: Vercel serves the files as they are.
 
-The folder also works on any other static host (Vercel, Netlify, cPanel hosting).
+The folder also works on any other static host (Netlify, GitHub Pages, cPanel hosting).
 
 ## Structure
 
