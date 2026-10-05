@@ -1,8 +1,7 @@
 /* DigiMithra — UI interactions (no dependencies) */
 (() => {
-  // Put the business WhatsApp number here (country code, digits only), e.g. "919876543210".
-  // Left empty, the form opens WhatsApp's share picker with the message pre-filled.
-  const WHATSAPP_NUMBER = "";
+  // Business WhatsApp number: country code + number, digits only.
+  const WHATSAPP_NUMBER = "919742142166";
 
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];

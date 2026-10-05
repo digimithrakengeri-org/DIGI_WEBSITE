@@ -322,12 +322,32 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
 .chips input:focus-visible + span { outline: 2px solid var(--green-2); outline-offset: 2px; }
 .form-msg { font-size: .85rem; color: var(--green-2); min-height: 1.2em; }
 
+.contact-direct { display: grid; gap: 12px; margin-top: 30px; }
+.direct-link {
+  display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 14px;
+  border: 1px solid var(--line); background: rgba(5, 7, 5, .5); transition: border-color .2s, transform .2s;
+  overflow-wrap: anywhere;
+}
+.direct-link:hover { border-color: var(--green); transform: translateX(4px); }
+.direct-link .di { font-size: 1.3rem; }
+.direct-link small { display: block; font-size: .72rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+
+.wa-float {
+  position: fixed; right: 20px; bottom: 20px; z-index: 40; width: 58px; height: 58px; border-radius: 50%;
+  display: grid; place-items: center; background: #25d366; color: #fff;
+  box-shadow: 0 10px 30px -6px rgba(37, 211, 102, .6); transition: transform .25s;
+}
+.wa-float:hover { transform: scale(1.08); }
+.wa-float svg { width: 30px; height: 30px; fill: currentColor; stroke: none; }
+
 /* ============ Footer ============ */
 .footer { position: relative; z-index: 1; border-top: 1px solid var(--line); padding: 50px 5vw 30px; text-align: center; }
 .footer-top { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 26px; }
 .footer-tag { letter-spacing: .4em; font-size: .78rem; color: var(--green); font-weight: 600; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 26px; margin-bottom: 26px; font-size: .9rem; color: var(--muted); }
 .footer-links a:hover { color: var(--green-2); }
+.footer-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 28px; margin-bottom: 22px; font-size: .9rem; color: #c9d4c2; }
+.footer-contact a:hover { color: var(--green-2); }
 .copy { font-size: .8rem; color: #5f6d58; }
 
 /* ============ Responsive ============ */
@@ -380,4 +400,9 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
   #hero3d { opacity: .7; }
   .hero { padding-top: 300px; }
   .hero { align-items: flex-end; }
+}
+
+/* keep the floating WhatsApp button from covering the footer */
+@media (max-width: 860px) {
+  .footer { padding-bottom: 96px; }
 }

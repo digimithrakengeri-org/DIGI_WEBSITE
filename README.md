@@ -21,7 +21,7 @@ python3 -m http.server 8000
 
 ## Configure
 
-- **WhatsApp number**: set `WHATSAPP_NUMBER` at the top of `js/ui.js` (country code + number, digits only, e.g. `919876543210`).
+- **WhatsApp number**: `WHATSAPP_NUMBER` at the top of `js/ui.js` (currently `919742142166`). The number and email also appear in `index.html` (contact section, footer, floating WhatsApp button).
 - **Stats / copy**: edit `index.html` — the numbers in the stats band are placeholders.
 
 ## Deploy
