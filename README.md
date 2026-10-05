@@ -27,7 +27,7 @@ python3 -m http.server 8000
 ## Deploy
 
 **GitHub Pages** (set up): `.github/workflows/pages.yml` publishes the site on every push to
-`claude/digimithra-3d-automation-site-mukxkg`. One-time setup: repo **Settings → Pages → Source → GitHub Actions**.
+`main` (and the `claude/digimithra-3d-automation-site-mukxkg` working branch). One-time setup: repo **Settings → Pages → Source → GitHub Actions**.
 The live URL appears in the workflow run and on the Pages settings page.
 
 The folder also works on any other static host (Vercel, Netlify, cPanel hosting).

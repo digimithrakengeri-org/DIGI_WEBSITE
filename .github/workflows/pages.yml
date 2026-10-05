@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ "claude/digimithra-3d-automation-site-mukxkg" ]
+    branches: [ "main", "claude/digimithra-3d-automation-site-mukxkg" ]
   workflow_dispatch:
 
 permissions:
