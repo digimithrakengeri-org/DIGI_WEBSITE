@@ -39,4 +39,5 @@ css/style.css     theme + layout (black / lime-green brand palette)
 js/scene.js       Three.js 3D hero scene
 js/ui.js          nav, reveal animations, tilt, pipeline console, optimize demo, contact form
 assets/           original brand image, logo cut-outs (mark, wordmark, full) and icons
+assets/brands/    platform logos (Google, Meta, Instagram, …) from Simple Icons, CC0; trademarks belong to their owners
 ```
