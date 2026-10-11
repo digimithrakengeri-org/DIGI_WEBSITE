@@ -1,5 +1,5 @@
 /* DigiMithra — 3D hero scene (Three.js)
- * An extruded "DM" growth-arrow logo at the center of an automation hub:
+ * The original DigiMithra "DM" growth-arrow logo, as a solid 3D badge at the center of an automation hub:
  * service satellites orbit the logo and stream data packets into it,
  * while a ring of growth bars pulses beneath and a particle field drifts behind.
  */
@@ -47,58 +47,34 @@ function init() {
   const world = new THREE.Group();
   scene.add(world);
 
-  /* ---------- the DM logo ---------- */
+  /* ---------- the DM logo (original artwork) ---------- */
+  // The real logo image, stacked in thin layers so it reads as a solid 3D badge.
+  // Front and back faces are full colour (the back one is turned around so the
+  // logo is never mirrored); the inner layers are darker and act as its sides.
   const logo = new THREE.Group();
   world.add(logo);
 
-  const extrude = { depth: 0.5, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 3, curveSegments: 32 };
-  const greenMat = new THREE.MeshPhysicalMaterial({
-    color: GREEN, emissive: 0x2c5a08, emissiveIntensity: 0.6,
-    metalness: 0.35, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.15,
+  const LOGO_W = 4.6, LOGO_H = LOGO_W * (344 / 484), LOGO_DEPTH = 0.42, LAYERS = 26;
+  new THREE.TextureLoader().load("assets/logo-mark.png", (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const plane = new THREE.PlaneGeometry(LOGO_W, LOGO_H);
+
+    const sideMat = new THREE.MeshBasicMaterial({ map: tex, color: 0x4a6a2a, alphaTest: 0.5, side: THREE.DoubleSide });
+    for (let i = 1; i < LAYERS - 1; i++) {
+      const layer = new THREE.Mesh(plane, sideMat);
+      layer.position.z = LOGO_DEPTH / 2 - (i / (LAYERS - 1)) * LOGO_DEPTH;
+      logo.add(layer);
+    }
+
+    const faceMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.02 });
+    const front = new THREE.Mesh(plane, faceMat);
+    front.position.z = LOGO_DEPTH / 2;
+    const back = new THREE.Mesh(plane, faceMat);
+    back.position.z = -LOGO_DEPTH / 2;
+    back.rotation.y = Math.PI;
+    logo.add(front, back);
   });
-  const whiteMat = new THREE.MeshPhysicalMaterial({
-    color: 0xf4f7f0, metalness: 0.1, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1,
-  });
-
-  // D bowl (white)
-  const d = new THREE.Shape();
-  d.moveTo(-0.55, 1.5);
-  d.lineTo(0.15, 1.5);
-  d.absarc(0.15, 0, 1.5, Math.PI / 2, -Math.PI / 2, true);
-  d.lineTo(-0.55, -1.5);
-  d.lineTo(-0.55, -1.08);
-  d.lineTo(0.15, -1.08);
-  d.absarc(0.15, 0, 1.08, -Math.PI / 2, Math.PI / 2, false);
-  d.lineTo(-0.55, 1.08);
-  d.closePath();
-  const dMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(d, extrude), whiteMat);
-  dMesh.position.z = -0.35;
-  logo.add(dMesh);
-
-  // M + growth arrow (green), built from a thick polyline
-  const mPath = [[-0.8, -1.5], [-0.8, 1.25], [0.35, -0.25], [1.75, 1.45]];
-  const mMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(thickPolyline(mPath, 0.46), extrude), greenMat);
-  logo.add(mMesh);
-
-  const [ax, ay] = mPath[mPath.length - 1];
-  const [px, py] = mPath[mPath.length - 2];
-  const dir = new THREE.Vector2(ax - px, ay - py).normalize();
-  const perp = new THREE.Vector2(-dir.y, dir.x);
-  const head = new THREE.Shape();
-  head.moveTo(ax + dir.x * 0.75, ay + dir.y * 0.75);
-  head.lineTo(ax + perp.x * 0.5 - dir.x * 0.05, ay + perp.y * 0.5 - dir.y * 0.05);
-  head.lineTo(ax - perp.x * 0.5 - dir.x * 0.05, ay - perp.y * 0.5 - dir.y * 0.05);
-  head.closePath();
-  logo.add(new THREE.Mesh(new THREE.ExtrudeGeometry(head, extrude), greenMat));
-
-  const stem = thickPolyline([[1.32, 0.55], [1.32, -1.5]], 0.46);
-  logo.add(new THREE.Mesh(new THREE.ExtrudeGeometry(stem, extrude), greenMat));
-
-  // center the logo geometry on its own pivot
-  const box = new THREE.Box3().setFromObject(logo);
-  const c = box.getCenter(new THREE.Vector3());
-  logo.children.forEach((m) => m.position.sub(c));
-  logo.scale.setScalar(0.95);
 
   // halo behind the logo
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -272,7 +248,7 @@ function init() {
     world.rotation.y = mouse.x * 0.35 + scrollP * 1.2;
     world.rotation.x = mouse.y * 0.15 + 0.08;
 
-    logo.rotation.y = Math.sin(t * 0.6) * 0.45 + (1 - ease) * Math.PI * 2;
+    logo.rotation.y = t * 0.35 + (1 - ease) * Math.PI * 2; // slow full turn, so every side is seen
     logo.position.y = Math.sin(t * 1.2) * 0.12;
     halo.material.opacity = 0.75 + Math.sin(t * 2) * 0.2;
     rings.rotation.z = t * 0.05;
@@ -321,31 +297,6 @@ function init() {
 }
 
 /* ---------- helpers ---------- */
-
-// Turn a centerline polyline into a solid Shape of the given width (mitered joins).
-function thickPolyline(points, width) {
-  const hw = width / 2;
-  const P = points.map(([x, y]) => new THREE.Vector2(x, y));
-  const normal = (a, b) => { const d = b.clone().sub(a).normalize(); return new THREE.Vector2(-d.y, d.x); };
-  const left = [], right = [];
-  for (let i = 0; i < P.length; i++) {
-    const n1 = i > 0 ? normal(P[i - 1], P[i]) : null;
-    const n2 = i < P.length - 1 ? normal(P[i], P[i + 1]) : null;
-    let n, len = hw;
-    if (n1 && n2) {
-      n = n1.clone().add(n2).normalize();
-      len = hw / Math.max(n.dot(n1), 0.3);
-    } else n = n1 || n2;
-    left.push(P[i].clone().addScaledVector(n, len));
-    right.push(P[i].clone().addScaledVector(n, -len));
-  }
-  const s = new THREE.Shape();
-  const outline = [...left, ...right.reverse()];
-  s.moveTo(outline[0].x, outline[0].y);
-  outline.slice(1).forEach((p) => s.lineTo(p.x, p.y));
-  s.closePath();
-  return s;
-}
 
 function radialTexture(inner) {
   const c = document.createElement("canvas");

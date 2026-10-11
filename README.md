@@ -22,15 +22,14 @@ python3 -m http.server 8000
 ## Configure
 
 - **WhatsApp number**: `WHATSAPP_NUMBER` at the top of `js/ui.js` (currently `919742142166`). The number and email also appear in `index.html` (contact section, footer, floating WhatsApp button).
-- **Stats / copy**: edit `index.html` — the numbers in the stats band are placeholders.
+- **Stats / copy**: edit `index.html`. The stats band shows service facts (6 services, 24h reply, free audit, no lock-in); swap in real client numbers once you have them.
 
 ## Deploy
 
-**GitHub Pages** (set up): `.github/workflows/pages.yml` publishes the site on every push to
-`main` (and the `claude/digimithra-3d-automation-site-mukxkg` working branch). One-time setup: repo **Settings → Pages → Source → GitHub Actions**.
-The live URL appears in the workflow run and on the Pages settings page.
+Live at **https://digimithra.vercel.app**, hosted on Vercel (project `digimithra`), which builds from this
+GitHub repo's `main` branch. There's no build step: Vercel serves the files as they are.
 
-The folder also works on any other static host (Vercel, Netlify, cPanel hosting).
+The folder also works on any other static host (Netlify, GitHub Pages, cPanel hosting).
 
 ## Structure
 
@@ -39,5 +38,6 @@ index.html        page markup
 css/style.css     theme + layout (black / lime-green brand palette)
 js/scene.js       Three.js 3D hero scene
 js/ui.js          nav, reveal animations, tilt, pipeline console, optimize demo, contact form
-assets/           brand image + DM favicon
+assets/           original brand image, logo cut-outs (mark, wordmark, full) and icons
+assets/brands/    platform logos (Google, Meta, Instagram, …) from Simple Icons, CC0; trademarks belong to their owners
 ```

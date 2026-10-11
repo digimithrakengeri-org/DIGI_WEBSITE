@@ -70,6 +70,23 @@
   }, { threshold: 0.15 });
   $$(".reveal").forEach((el) => io.observe(el));
 
+  // A jump (nav link, "back to top", restored scroll position) can skip past sections
+  // without them ever intersecting, so reveal anything that is already above the viewport.
+  let revealQueued = false;
+  window.addEventListener("scroll", () => {
+    if (revealQueued) return;
+    revealQueued = true;
+    requestAnimationFrame(() => {
+      revealQueued = false;
+      $$(".reveal:not(.in)").forEach((el) => {
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+          el.classList.add("in");
+          io.unobserve(el);
+        }
+      });
+    });
+  }, { passive: true });
+
   /* ---------- 3D tilt cards ---------- */
   if (!reduceMotion && window.matchMedia("(pointer: fine)").matches) {
     $$(".tilt").forEach((card) => {
