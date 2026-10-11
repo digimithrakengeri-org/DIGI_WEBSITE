@@ -53,10 +53,15 @@ function init() {
   // The real logo image, stacked in thin layers so it reads as a solid 3D badge.
   // Front and back faces are full colour (the back one is turned around so the
   // logo is never mirrored); the inner layers are darker and act as its sides.
+  // "stack" holds the DM and the globe it sits on, so they bob together.
+  const stack = new THREE.Group();
+  world.add(stack);
   const logo = new THREE.Group();
-  world.add(logo);
+  stack.add(logo);
 
   const LOGO_W = 4.6, LOGO_H = LOGO_W * (344 / 484), LOGO_DEPTH = 0.42, LAYERS = 26;
+  const LOGO_Y = 1.35;
+  logo.position.y = LOGO_Y;
   new THREE.TextureLoader().load("assets/logo-mark.png", (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -78,31 +83,34 @@ function init() {
     logo.add(front, back);
   });
 
-  // Earth globe sitting above the DM. It is a child of the logo group, so it turns and bobs
-  // exactly with the logo. Texture: NASA Blue Marble (public domain) via the three.js examples.
-  const GLOBE_R = 0.85;
+  // The DigiMithra globe (from the brand's own globe artwork) spins under the DM, which sits on top.
+  // assets/globe-earth.jpg: front = the brand globe image, back = NASA Blue Marble restyled to match.
+  const GLOBE_R = 1.9;
+  const GLOBE_FRONT = -0.61; // turns the Americas side of the artwork towards the camera at start
+  const globeTilt = new THREE.Group();
+  globeTilt.position.y = LOGO_Y - LOGO_H / 2 - GLOBE_R + 0.32; // DM's base rests on the top of the globe
+  globeTilt.rotation.z = 0.18;
+  stack.add(globeTilt);
   const globe = new THREE.Mesh(
-    new THREE.SphereGeometry(GLOBE_R, isSmallScreen ? 40 : 64, isSmallScreen ? 28 : 48),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0, emissive: 0x0b1a08, emissiveIntensity: 0.6 })
+    new THREE.SphereGeometry(GLOBE_R, isSmallScreen ? 48 : 72, isSmallScreen ? 32 : 48),
+    new THREE.MeshBasicMaterial({ color: 0x0a1a3a, fog: false })
   );
-  globe.position.y = (4.6 * (344 / 484)) / 2 + GLOBE_R + 0.25; // just above the top of the logo
-  globe.rotation.z = 0.41; // Earth's axial tilt
-  logo.add(globe);
-  new THREE.TextureLoader().load("assets/earth.jpg", (tex) => {
+  globe.rotation.y = GLOBE_FRONT;
+  globeTilt.add(globe);
+  new THREE.TextureLoader().load("assets/globe-earth.jpg", (tex) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     globe.material.map = tex;
-    globe.material.emissiveMap = tex; // keep the continents visible on the side away from the lights
-    globe.material.emissive.set(0xffffff);
-    globe.material.emissiveIntensity = 0.45;
+    globe.material.color.set(0xffffff);
     globe.material.needsUpdate = true;
   });
+  // blue atmosphere glow around the globe, like the artwork's glowing rim
   const atmosphere = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: radialTexture("rgba(150,230,90,0.55)"), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+    map: radialTexture("rgba(80,160,255,0.85)"), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
   }));
   atmosphere.scale.set(GLOBE_R * 3.4, GLOBE_R * 3.4, 1);
-  atmosphere.position.copy(globe.position).setZ(-0.4);
-  logo.add(atmosphere);
+  atmosphere.position.set(0, globeTilt.position.y, -GLOBE_R - 0.2);
+  stack.add(atmosphere);
 
   // halo behind the logo
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -218,9 +226,9 @@ function init() {
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    if (w > 1024) { baseX = 4.4; baseY = -0.75; baseScale = 0.82; }
-    else if (w > 700) { baseX = 2.8; baseY = -0.1; baseScale = 0.62; }
-    else { baseX = 0; baseY = 2.7; baseScale = 0.44; }
+    if (w > 1024) { baseX = 4.4; baseY = 0.35; baseScale = 0.74; }
+    else if (w > 700) { baseX = 2.8; baseY = 0.6; baseScale = 0.56; }
+    else { baseX = 0; baseY = 3.3; baseScale = 0.37; }
   };
   window.addEventListener("resize", resize);
   resize();
@@ -266,7 +274,8 @@ function init() {
     world.rotation.x = mouse.y * 0.15 + 0.08;
 
     logo.rotation.y = t * 0.35 + (1 - ease) * Math.PI * 2; // slow full turn, so every side is seen
-    logo.position.y = Math.sin(t * 1.2) * 0.12;
+    stack.position.y = Math.sin(t * 1.2) * 0.12;
+    globe.rotation.y = GLOBE_FRONT + t * 0.22; // the globe spins under the DM
     halo.material.opacity = 0.75 + Math.sin(t * 2) * 0.2;
     rings.rotation.z = t * 0.05;
 
