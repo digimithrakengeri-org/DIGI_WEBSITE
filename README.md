@@ -2,7 +2,7 @@
 
 Marketing site for **DigiMithra**, a digital marketing company ("We Build Your Brand").
 
-- **3D hero** (Three.js): the original DM logo sitting on a spinning globe at the center of an automation hub — service satellites carrying real platform logos (WordPress, Google, Meta, Instagram, Google Ads, PageSpeed) orbit and stream data packets into it.
+- **3D hero** (Three.js): a solid, bevelled 3D DM (extruded from the original logo's outline) sitting on a spinning globe at the center of an automation hub — service satellites carrying real platform logos (WordPress, Google, Meta, Instagram, Google Ads, PageSpeed) orbit and stream data packets into it.
 - **Services**: Website Development, SEO, Meta Business, One-Click Optimize, Social Media Management, Branding & Ads — with 3D tilt cards.
 - **Automation pipeline**: 3D CSS cubes + a live "engine" console showing a lead moving Attract → Convert → Automate → Engage → Grow.
 - **One-Click Optimize demo**: simulated audit with an animated growth-score gauge.
@@ -40,6 +40,7 @@ css/style.css     theme + layout (black / lime-green brand palette)
 js/scene.js       Three.js 3D hero scene
 js/ui.js          nav, reveal animations, tilt, pipeline console, optimize demo, contact form
 assets/           original brand image, logo cut-outs (mark, wordmark, full) and icons
+assets/logo-shape.json  exact DM outline traced from logo-mark.png, extruded into the solid 3D logo
 assets/globe-earth.jpg  hero globe texture: front = DigiMithra's globe artwork, back = NASA Blue Marble restyled to match
 assets/brands/    platform logos (Google, Meta, Instagram, …) from Simple Icons, CC0; trademarks belong to their owners
 ```

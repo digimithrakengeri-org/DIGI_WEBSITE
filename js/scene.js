@@ -50,37 +50,76 @@ function init() {
   scene.add(world);
 
   /* ---------- the DM logo (original artwork) ---------- */
-  // The real logo image, stacked in thin layers so it reads as a solid 3D badge.
-  // Front and back faces are full colour (the back one is turned around so the
-  // logo is never mirrored); the inner layers are darker and act as its sides.
+  // A solid 3D DM: the logo's exact outline (assets/logo-shape.json, traced from logo-mark.png)
+  // is extruded with bevelled edges. The original artwork is painted on the front and back faces,
+  // and each side wall takes the colour of the logo just inside that edge (white D, green M).
   // "stack" holds the DM and the globe it sits on, so they bob together.
   const stack = new THREE.Group();
   world.add(stack);
   const logo = new THREE.Group();
   stack.add(logo);
 
-  const LOGO_W = 4.6, LOGO_H = LOGO_W * (344 / 484), LOGO_DEPTH = 0.42, LAYERS = 26;
+  const LOGO_W = 4.6, LOGO_H = LOGO_W * (344 / 484), LOGO_DEPTH = 0.42;
   const LOGO_Y = 1.35;
   logo.position.y = LOGO_Y;
-  new THREE.TextureLoader().load("assets/logo-mark.png", (tex) => {
+  Promise.all([
+    fetch("assets/logo-shape.json").then((r) => r.json()),
+    new THREE.TextureLoader().loadAsync("assets/logo-mark.png"),
+  ]).then(([outline, tex]) => {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    const plane = new THREE.PlaneGeometry(LOGO_W, LOGO_H);
+    const { width: PW, height: PH } = outline;
+    const toWorld = ([px, py]) => new THREE.Vector2((px / PW - 0.5) * LOGO_W, (0.5 - py / PH) * LOGO_H);
+    const shapes = outline.polygons.map(([outer, ...holes]) => {
+      const shape = new THREE.Shape(outer.map(toWorld));
+      holes.forEach((h) => shape.holes.push(new THREE.Path(h.map(toWorld))));
+      return shape;
+    });
+    const BEVEL = 0.05;
+    const geo = new THREE.ExtrudeGeometry(shapes, {
+      depth: LOGO_DEPTH, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: 0.03, bevelSegments: 3, curveSegments: 1,
+    });
+    geo.translate(0, 0, -LOGO_DEPTH / 2);
 
-    const sideMat = new THREE.MeshBasicMaterial({ map: tex, color: 0x4a6a2a, alphaTest: 0.5, side: THREE.DoubleSide });
-    for (let i = 1; i < LAYERS - 1; i++) {
-      const layer = new THREE.Mesh(plane, sideMat);
-      layer.position.z = LOGO_DEPTH / 2 - (i / (LAYERS - 1)) * LOGO_DEPTH;
-      logo.add(layer);
+    // read the artwork's pixels so each side-wall vertex can take the colour just inside its edge
+    const img = tex.image, cv = document.createElement("canvas");
+    cv.width = img.width; cv.height = img.height;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.drawImage(img, 0, 0);
+    const imgData = cx.getImageData(0, 0, cv.width, cv.height), px = imgData.data;
+    // The artwork's bottom rows pick up the glow line from the original poster (bright speckles);
+    // repaint them with the clean colour just above so the base of the D and M is solid.
+    const CLEAN_ROW = Math.round(cv.height * (318 / 344));
+    for (let y = CLEAN_ROW + 1; y < cv.height; y++) for (let x = 0; x < cv.width; x++) {
+      const k = (y * cv.width + x) * 4, s0 = (CLEAN_ROW * cv.width + x) * 4;
+      if (px[k + 3] > 0 && px[s0 + 3] > 100) { px[k] = px[s0]; px[k + 1] = px[s0 + 1]; px[k + 2] = px[s0 + 2]; }
     }
+    cx.putImageData(imgData, 0, 0);
+    const faceTex = new THREE.CanvasTexture(cv);
+    faceTex.colorSpace = THREE.SRGBColorSpace;
+    faceTex.anisotropy = tex.anisotropy;
+    const pos = geo.attributes.position, nrm = geo.attributes.normal, uv = geo.attributes.uv;
+    const colors = new Float32Array(pos.count * 3), col = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i);
+      const u = x / LOGO_W + 0.5, v = y / LOGO_H + 0.5;
+      uv.setXY(i, u, v); // planar mapping: the artwork lines up exactly with the outline
+      let sx = u * cv.width - nrm.getX(i) * 5, sy = (1 - v) * cv.height + nrm.getY(i) * 5;
+      sx = Math.min(cv.width - 1, Math.max(0, sx | 0)); sy = Math.min(cv.height - 1, Math.max(0, sy | 0));
+      const k = (sy * cv.width + sx) * 4;
+      if (px[k + 3] > 100) col.setRGB(px[k] / 255, px[k + 1] / 255, px[k + 2] / 255, THREE.SRGBColorSpace);
+      else col.set(GREEN);
+      col.multiplyScalar(0.8);
+      colors.set([col.r, col.g, col.b], i * 3);
+    }
+    uv.needsUpdate = true;
+    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    const faceMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.02 });
-    const front = new THREE.Mesh(plane, faceMat);
-    front.position.z = LOGO_DEPTH / 2;
-    const back = new THREE.Mesh(plane, faceMat);
-    back.position.z = -LOGO_DEPTH / 2;
-    back.rotation.y = Math.PI;
-    logo.add(front, back);
+    const faceMat = new THREE.MeshStandardMaterial({
+      map: faceTex, emissiveMap: faceTex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.1, fog: false,
+    });
+    const sideMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.25, fog: false });
+    logo.add(new THREE.Mesh(geo, [faceMat, sideMat]));
   });
 
   // The DigiMithra globe (from the brand's own globe artwork) spins under the DM, which sits on top.
@@ -273,7 +312,8 @@ function init() {
     world.rotation.y = mouse.x * 0.35 + scrollP * 1.2;
     world.rotation.x = mouse.y * 0.15 + 0.08;
 
-    logo.rotation.y = t * 0.35 + (1 - ease) * Math.PI * 2; // slow full turn, so every side is seen
+    // gentle sway (plus one spin on load) so the solid DM shows its depth but always reads correctly
+    logo.rotation.y = Math.sin(t * 0.55) * 0.5 + (1 - ease) * Math.PI * 2;
     stack.position.y = Math.sin(t * 1.2) * 0.12;
     globe.rotation.y = GLOBE_FRONT + t * 0.22; // the globe spins under the DM
     halo.material.opacity = 0.75 + Math.sin(t * 2) * 0.2;
