@@ -25,7 +25,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 body.loading { overflow: hidden; }
-img { max-width: 100%; display: block; }
+img { max-width: 100%; height: auto; display: block; }
 a { color: inherit; text-decoration: none; }
 svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -131,8 +131,13 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
 .float-badge {
   position: absolute; padding: 12px 18px; border-radius: 14px;
   background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(10px);
-  display: flex; flex-direction: column; animation: floaty 6s ease-in-out infinite;
+  display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center;
+  animation: floaty 6s ease-in-out infinite;
 }
+.float-badge .fb-logos { grid-row: span 2; display: flex; }
+.float-badge .fb-logos .brand-chip { width: 38px; height: 38px; border-radius: 50%; }
+.float-badge .fb-logos .brand-chip + .brand-chip { margin-left: -10px; }
+.float-badge .fb-logos .brand-chip img { width: 22px; height: 22px; }
 .float-badge strong { font-size: 1.4rem; color: var(--green-2); line-height: 1.1; }
 .float-badge span { font-size: .72rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
 .b1 { right: 8vw; top: 22%; }
@@ -195,7 +200,7 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
 .card li::before { content: "✓"; position: absolute; left: 0; color: var(--green); font-weight: 700; }
 .card.featured { border-color: rgba(140, 214, 48, .45); background: linear-gradient(160deg, rgba(60, 100, 20, .45), rgba(10, 14, 9, .95)); }
 .tag {
-  position: absolute; top: 18px; right: 18px; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+  position: absolute; top: 18px; right: 18px; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
   background: var(--green); color: #071004; padding: 4px 10px; border-radius: 999px; font-weight: 700;
 }
 
@@ -374,7 +379,8 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
 /* ============ Responsive ============ */
 @media (max-width: 1024px) {
   .services-grid { grid-template-columns: repeat(2, 1fr); }
-  .optimize-wrap, .about-wrap, .contact-wrap { grid-template-columns: 1fr; }
+  .optimize-wrap, .about-wrap, .contact-wrap { grid-template-columns: minmax(0, 1fr); }
+  .optimize-wrap > *, .about-wrap > *, .contact-wrap > * { min-width: 0; }
   .pillars { grid-template-columns: repeat(3, 1fr); row-gap: 30px; }
   .pillar:nth-child(4) { border-left: 0; }
   .b2 { display: none; }
@@ -386,7 +392,8 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
     transform: translateX(100%); transition: transform .35s ease;
   }
   .nav-links.open { transform: none; }
-  .menu-toggle { display: block; z-index: 60; }
+  .menu-toggle { display: block; z-index: 60; width: 44px; height: 44px; padding: 10px; }
+  .nav-links .btn-sm { min-height: 44px; padding: 12px 24px; }
   .menu-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
   .menu-toggle.open span:nth-child(2) { opacity: 0; }
   .menu-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
@@ -395,7 +402,14 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
   .pulse { width: 100% !important; height: 0; transition: height .9s ease; }
   .node { background: var(--bg-2); padding: 10px 0; }
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .hero-badges { display: none; }
+  /* phones/tablets: the floating badges become a row of logo cards under the buttons */
+  .hero { flex-direction: column; align-items: stretch; justify-content: flex-end; }
+  .hero-badges { position: relative; inset: auto; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; pointer-events: auto; }
+  .float-badge, .b2 { position: static; display: grid; animation: none; padding: 10px 14px 10px 10px; }
+  .float-badge strong { font-size: 1.05rem; }
+  .float-badge span { font-size: .7rem; }
+  .float-badge .fb-logos .brand-chip { width: 32px; height: 32px; }
+  .float-badge .fb-logos .brand-chip img { width: 18px; height: 18px; }
 }
 @media (max-width: 600px) {
   .section { padding: 90px 16px; }
@@ -419,7 +433,7 @@ svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round
 /* 3D canvas sits behind the copy on small screens — soften it so text stays readable */
 @media (max-width: 700px) {
   #hero3d { opacity: .7; }
-  .hero { padding-top: 300px; }
+  .hero { padding-top: 340px; }
   .hero { align-items: flex-end; }
 }
 

@@ -1,20 +1,22 @@
 /* DigiMithra — 3D hero scene (Three.js)
  * The original DigiMithra "DM" growth-arrow logo, as a solid 3D badge at the center of an automation hub:
  * service satellites orbit the logo and stream data packets into it,
- * while a ring of growth bars pulses beneath and a particle field drifts behind.
+ * while a real Earth globe rides above the logo and a particle field drifts behind.
  */
 import * as THREE from "three";
 
 const canvas = document.getElementById("hero3d");
 const hero = document.getElementById("home");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Phones and small tablets: draw at lower resolution and 30 fps to keep scrolling smooth and save battery.
+const isSmallScreen = window.matchMedia("(max-width: 860px)").matches;
 
 const GREEN = 0x8cd630;
 const GREEN_LIGHT = 0xb6f45a;
 
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: !isSmallScreen, alpha: true, powerPreference: "high-performance" });
 } catch (err) {
   console.warn("WebGL unavailable — showing static hero.", err);
 }
@@ -22,7 +24,7 @@ try {
 if (renderer) init();
 
 function init() {
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isSmallScreen ? 1.5 : 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
@@ -76,6 +78,32 @@ function init() {
     logo.add(front, back);
   });
 
+  // Earth globe sitting above the DM. It is a child of the logo group, so it turns and bobs
+  // exactly with the logo. Texture: NASA Blue Marble (public domain) via the three.js examples.
+  const GLOBE_R = 0.85;
+  const globe = new THREE.Mesh(
+    new THREE.SphereGeometry(GLOBE_R, isSmallScreen ? 40 : 64, isSmallScreen ? 28 : 48),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0, emissive: 0x0b1a08, emissiveIntensity: 0.6 })
+  );
+  globe.position.y = (4.6 * (344 / 484)) / 2 + GLOBE_R + 0.25; // just above the top of the logo
+  globe.rotation.z = 0.41; // Earth's axial tilt
+  logo.add(globe);
+  new THREE.TextureLoader().load("assets/earth.jpg", (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    globe.material.map = tex;
+    globe.material.emissiveMap = tex; // keep the continents visible on the side away from the lights
+    globe.material.emissive.set(0xffffff);
+    globe.material.emissiveIntensity = 0.45;
+    globe.material.needsUpdate = true;
+  });
+  const atmosphere = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: radialTexture("rgba(150,230,90,0.55)"), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+  }));
+  atmosphere.scale.set(GLOBE_R * 3.4, GLOBE_R * 3.4, 1);
+  atmosphere.position.copy(globe.position).setZ(-0.4);
+  logo.add(atmosphere);
+
   // halo behind the logo
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({
     map: radialTexture("rgba(140,214,48,0.55)"), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -98,20 +126,28 @@ function init() {
   });
 
   /* ---------- service satellites ---------- */
-  const services = ["WEB", "SEO", "META", "SOCIAL", "ADS", "⚡ 1-CLICK"];
-  const satellites = services.map((label, i) => {
+  // Each satellite carries the real logo of its main platform, and its label lists
+  // the platforms that service covers (logo files from assets/brands, Simple Icons).
+  const services = [
+    { label: "WEB", logos: ["wordpress", "html5"] },
+    { label: "SEO", logos: ["google", "googlemaps"] },
+    { label: "META", logos: ["meta", "facebook"] },
+    { label: "SOCIAL", logos: ["instagram", "youtube"] },
+    { label: "ADS", logos: ["googleads", "whatsapp"] },
+    { label: "1-CLICK", logos: ["pagespeedinsights"] },
+  ];
+  const satellites = services.map(({ label, logos }, i) => {
     const g = new THREE.Group();
-    const core = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.26, 1),
-      new THREE.MeshStandardMaterial({ color: GREEN_LIGHT, emissive: GREEN, emissiveIntensity: 0.9, roughness: 0.3, flatShading: true })
-    );
+    const core = new THREE.Sprite(new THREE.SpriteMaterial({ map: logoBadgeTexture(logos[0]), transparent: true, depthWrite: false, fog: false }));
+    core.scale.set(0.74, 0.74, 1);
     const cage = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.42, 0),
-      new THREE.MeshBasicMaterial({ color: GREEN, wireframe: true, transparent: true, opacity: 0.55 })
+      new THREE.IcosahedronGeometry(0.46, 0),
+      new THREE.MeshBasicMaterial({ color: GREEN, wireframe: true, transparent: true, opacity: 0.45 })
     );
-    const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(label), transparent: true, depthWrite: false }));
-    tag.scale.set(1.1, 0.31, 1);
-    tag.position.y = 0.62;
+    const { tex: labelTex, aspect } = labelTexture(label, logos);
+    const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex, transparent: true, depthWrite: false, fog: false }));
+    tag.scale.set(0.36 * aspect, 0.36, 1);
+    tag.position.y = 0.72;
     g.add(core, cage, tag);
     world.add(g);
     return {
@@ -149,29 +185,6 @@ function init() {
     return tmpCurve;
   };
 
-  /* ---------- growth bars ring ---------- */
-  const bars = [];
-  const barGroup = new THREE.Group();
-  barGroup.position.y = -2.8;
-  world.add(barGroup);
-  const barGeo = new THREE.BoxGeometry(0.16, 1, 0.16);
-  barGeo.translate(0, 0.5, 0);
-  const BAR_COUNT = 36;
-  for (let i = 0; i < BAR_COUNT; i++) {
-    const a = (i / BAR_COUNT) * Math.PI * 2;
-    const mat = new THREE.MeshStandardMaterial({ color: GREEN, emissive: GREEN, emissiveIntensity: 0.4, transparent: true, opacity: 0.85 });
-    const b = new THREE.Mesh(barGeo, mat);
-    b.position.set(Math.cos(a) * 2.6, 0, Math.sin(a) * 2.6);
-    barGroup.add(b);
-    bars.push({ b, a });
-  }
-  const disc = new THREE.Mesh(
-    new THREE.RingGeometry(2.2, 3.0, 64),
-    new THREE.MeshBasicMaterial({ color: GREEN, transparent: true, opacity: 0.08, side: THREE.DoubleSide })
-  );
-  disc.rotation.x = -Math.PI / 2;
-  barGroup.add(disc);
-
   /* ---------- floor grid ---------- */
   const grid = new THREE.GridHelper(60, 60, GREEN, 0x1d2a16);
   grid.position.y = -2.85;
@@ -205,9 +218,9 @@ function init() {
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    if (w > 1024) { baseX = 4.4; baseY = 0.1; baseScale = 0.82; }
-    else if (w > 700) { baseX = 2.8; baseY = 0.6; baseScale = 0.62; }
-    else { baseX = 0; baseY = 2.9; baseScale = 0.46; }
+    if (w > 1024) { baseX = 4.4; baseY = -0.75; baseScale = 0.82; }
+    else if (w > 700) { baseX = 2.8; baseY = -0.1; baseScale = 0.62; }
+    else { baseX = 0; baseY = 2.7; baseScale = 0.44; }
   };
   window.addEventListener("resize", resize);
   resize();
@@ -232,9 +245,13 @@ function init() {
   const v = new THREE.Vector3();
   const intro = { t: 0 };
 
-  const frame = () => {
+  const frameStep = isSmallScreen ? 1000 / 30 : 0;
+  let lastFrame = 0;
+  const frame = (now = 0) => {
     requestAnimationFrame(frame);
     if (!visible) { clock.getDelta(); return; }
+    if (now - lastFrame < frameStep - 1) return;
+    lastFrame = now;
     const dt = Math.min(clock.getDelta(), 0.05);
     const t = clock.elapsedTime * (reduceMotion ? 0.2 : 1);
     intro.t = Math.min(intro.t + dt * 0.6, 1);
@@ -260,7 +277,6 @@ function init() {
       s.g.position.copy(v);
       s.cage.rotation.x = t * 0.8;
       s.cage.rotation.y = t * 0.6;
-      s.core.rotation.y = -t;
     });
 
     links.forEach(({ line, s }) => {
@@ -275,14 +291,6 @@ function init() {
       setCurve(p.s).getPoint(p.t, p.m.position);
       p.m.scale.setScalar(0.6 + Math.sin(p.t * Math.PI) * 0.9);
     });
-
-    bars.forEach(({ b, a }, i) => {
-      const wave = Math.sin(t * 2 + i * 0.5) * 0.5 + 0.5;
-      const growth = 0.25 + ((i % 12) / 12) * 1.1;
-      b.scale.y = (0.15 + wave * growth) * ease;
-      b.material.emissiveIntensity = 0.25 + wave * 0.8;
-    });
-    barGroup.rotation.y = -t * 0.15;
 
     particles.rotation.y = t * 0.02;
     particles.rotation.x = Math.sin(t * 0.1) * 0.05;
@@ -312,24 +320,83 @@ function radialTexture(inner) {
   return tex;
 }
 
-function labelTexture(text) {
-  const c = document.createElement("canvas");
-  c.width = 384; c.height = 108;
+// Cache lives on the function: init() runs before module-level consts below are initialised.
+function brandImage(slug) {
+  const cache = (brandImage.cache ||= {});
+  if (!cache[slug]) {
+    const img = new Image();
+    cache[slug] = new Promise((resolve) => {
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null); // a missing logo just leaves the badge blank
+    });
+    img.src = `assets/brands/${slug}.svg`;
+  }
+  return cache[slug];
+}
+
+// White disc with a glowing green rim and the platform logo in the middle.
+function logoBadgeTexture(slug) {
+  const S = 256, c = document.createElement("canvas");
+  c.width = c.height = S;
   const ctx = c.getContext("2d");
-  ctx.fillStyle = "rgba(10,16,8,0.85)";
-  ctx.strokeStyle = "rgba(140,214,48,0.8)";
-  ctx.lineWidth = 4;
+  ctx.shadowColor = "rgba(140,214,48,0.9)";
+  ctx.shadowBlur = 26;
+  ctx.fillStyle = "#f4f7f0";
   ctx.beginPath();
-  ctx.roundRect(4, 4, 376, 100, 50);
+  ctx.arc(S / 2, S / 2, S / 2 - 30, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "rgba(140,214,48,0.95)";
   ctx.stroke();
-  ctx.fillStyle = "#d8f7b0";
-  ctx.font = "600 44px Poppins, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, 192, 57);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  brandImage(slug).then((img) => {
+    if (!img) return;
+    const L = 104;
+    ctx.drawImage(img, (S - L) / 2, (S - L) / 2, L, L);
+    tex.needsUpdate = true;
+  });
+  return tex;
+}
+
+// Dark pill: small logo tiles followed by the service name. Returns the texture and its aspect ratio.
+function labelTexture(text, logos = []) {
+  const H = 108, TILE = 72, GAP = 10, PAD = 18;
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+  const font = "600 44px Poppins, sans-serif";
+  ctx.font = font;
+  const textW = Math.ceil(ctx.measureText(text).width);
+  c.width = PAD + logos.length * (TILE + GAP) + textW + PAD + 12;
+  c.height = H;
+  const draw = (imgs) => {
+    ctx.clearRect(0, 0, c.width, H);
+    ctx.fillStyle = "rgba(10,16,8,0.88)";
+    ctx.strokeStyle = "rgba(140,214,48,0.8)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(4, 4, c.width - 8, H - 8, (H - 8) / 2);
+    ctx.fill();
+    ctx.stroke();
+    logos.forEach((_, i) => {
+      const x = PAD + i * (TILE + GAP), y = (H - TILE) / 2;
+      ctx.fillStyle = "#f4f7f0";
+      ctx.beginPath();
+      ctx.arc(x + TILE / 2, y + TILE / 2, TILE / 2, 0, Math.PI * 2);
+      ctx.fill();
+      if (imgs && imgs[i]) ctx.drawImage(imgs[i], x + 16, y + 16, TILE - 32, TILE - 32);
+    });
+    ctx.fillStyle = "#d8f7b0";
+    ctx.font = font;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, PAD + logos.length * (TILE + GAP) + 4, H / 2 + 3);
+  };
+  draw(null);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
-  return tex;
+  Promise.all(logos.map(brandImage)).then((imgs) => { draw(imgs); tex.needsUpdate = true; });
+  return { tex, aspect: c.width / H };
 }
