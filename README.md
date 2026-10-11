@@ -26,8 +26,9 @@ python3 -m http.server 8000
 
 ## Deploy
 
-Live at **https://digimithra.vercel.app**, hosted on Vercel (project `digimithra`), which builds from this
-GitHub repo's `main` branch. There's no build step: Vercel serves the files as they are.
+Live at **https://www.digimithra.co.in** (also reachable at https://digimithra.vercel.app), hosted on Vercel
+(project `digimithra`), which builds from this GitHub repo's `main` branch. There's no build step: Vercel serves
+the files as they are.
 
 The folder also works on any other static host (Netlify, GitHub Pages, cPanel hosting).
 
